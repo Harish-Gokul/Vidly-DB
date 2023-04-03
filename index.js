@@ -1,8 +1,10 @@
 const express = require("express");
 const geners = require("./rotues/geners")
 const app = express(); 
+const lowerCaseConverter = require("./middleware/nameLowerCase")
 
 app.use(express.json())
+app.use(lowerCaseConverter)
 
 app.use("/api/geners",geners);
 

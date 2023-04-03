@@ -2,79 +2,93 @@ const express = require("express")
 const { object } = require("joi")
 const routes = express.Router()
 const Joi = require("joi")
+const mongoose = require("mongoose")
+mongoose.connect("mongodb://localhost/VidlyDB")
+.then( ()=> console.log("Connected Succesfully"))
+
+const genreSchema = mongoose.Schema({
+    name: {
+        type:String,
+        minlength: 3,
+        required:true,
+        lowercase : true
+    }
+})
+
+const GenresCollections = mongoose.model("GenresCollection",genreSchema);
+
+ 
 
 const schema = Joi.object({
     name: Joi.string().min(3).required()
 })
 
-let geners = [ {id:1,name:"Romance"},{id:2,name:"Action"}] 
 
-routes.get("/", (req,res)=>{
+routes.get("/", async (req,res)=>{
+    let geners = await GenresCollections.find().sort("name");
     res.send(geners)
 })
 
-routes.get("/:id",(req,res)=>{
-    for(let item of geners ){
-        if(item.id == req.params.id) {
-            res.send(item);
-            return 
-        }
-    } 
+routes.get("/:id", async (req,res)=>{
 
-    res.status(404).send({msg:"Item Not Found"})
-})
-
-routes.post("/",(req,res)=>{
-    let validationStatus = schema.validate(req.body);
-
-    if(validationStatus.error)
-    return res.status(400).send({errorMsg:validationStatus.error.details[0].message});
-
-    let isNameExits = isPropertyAndValuePresent("name",req.body.name,geners) 
-    if(isNameExits)
-    return res.status(400).send({msg:"File Already Exits"})
-
-    let newObj = {id:geners.length+1,name:req.body.name};
-    geners.push(newObj)
-    res.send(newObj)
-})
-
-routes.put("/:id",(req,res)=>{
-    let validationStatus = schema.validate(req.body);
-    if(validationStatus.error)
-    return res.status(400).send({errorMsg:validationStatus.error.details[0].message});
-    
-    let isNameAlreadyPresent = isPropertyAndValuePresent("name",req.body.name,geners)
-    if(isNameAlreadyPresent)
-    return res.status(400).send({errorMsg:"File Already Present"})
-
-    for( let object of geners){ 
-        if(object.id == req.params.id){
-            object.name = req.body.name;
-            res.send(object);
-            return
-        }
+    try{
+        let genre = await GenresCollections.find({_id : req.params.id});
+        res.send(genre);
+        return;
     }
-
-    res.status(404).send({errorMsg:"File Not Fount"})
+    catch (err){
+        res.status(400).send(err);
+        return;
+    }
 })
 
-routes.delete("/:id",(req,res)=>{
-    let targetObj;
+routes.post("/", async (req,res)=>{
+    let validationStatus = schema.validate(req.body);
+
+    if(validationStatus.error)return res.status(400).send({errorMsg:validationStatus.error.details[0].message});
+ 
+     let queryResult = await GenresCollections.find({"name": req.body.name})
+     if(queryResult.length >0)
+      
+     return res.status(400).send({msg:"Name Already Exits"})
      
-    for( let index in geners){ 
-        if(geners[index].id == req.params.id){
-             targetObj = index; 
-            break
-        }
-    } 
+     let newGenre = await createGenre(req.body.name)
+     newGenre.save()
+     res.send(newGenre)
+})
 
-    if(targetObj == undefined)
-    return res.status(404).send({error:"File Not Fount"});
+async function createGenre(name){
+    const genre = new GenresCollections({
+        name :name
+    })
+    return genre;
+}
 
-    geners.splice(targetObj,1);
-    res.send({Status:"Deleted Sucessfully"})
+routes.put("/:id",async (req,res)=>{
+    let validationStatus = schema.validate(req.body);
+    if(validationStatus.error)
+    return res.status(400).send({errorMsg:validationStatus.error.details[0].message});
     
+    let isNameAlreadyExist = await GenresCollections.find({name : req.body.name})
+    if(isNameAlreadyExist.length >0) return res.status(400).send({errorMsg:"Name Already Present"})
+    
+     
+     let genre = await GenresCollections.findByIdAndUpdate(req.params.id, {name: req.body.name},{ new:true})
+     if(!genre)
+     res.status(404).send({msg:"Genre with the given id is not Found"})
+     res.send(genre)
+})
+
+routes.delete("/:id", async(req,res)=>{
+
+    const genre = await GenresCollections.findByIdAndDelete(req.params.id);
+    if(!genre){
+        res.status(404).send({msg:"could not Find"})
+        return
+    }
+    
+ 
+    res.send({Status:"Deleted Sucessfully"});
 })
 
 
