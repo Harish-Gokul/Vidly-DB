@@ -1,28 +1,9 @@
 const express = require("express")
 const { object } = require("joi")
 const routes = express.Router()
-const Joi = require("joi")
-const mongoose = require("mongoose")
-mongoose.connect("mongodb://localhost/VidlyDB")
-.then( ()=> console.log("Connected Succesfully"))
-
-const genreSchema = mongoose.Schema({
-    name: {
-        type:String,
-        minlength: 3,
-        required:true,
-        lowercase : true
-    }
-})
-
+const mongoose = require("mongoose") 
+const {genreSchema,joiSchema} = require("../models/genre")
 const GenresCollections = mongoose.model("GenresCollection",genreSchema);
-
- 
-
-const schema = Joi.object({
-    name: Joi.string().min(3).required()
-})
-
 
 routes.get("/", async (req,res)=>{
     let geners = await GenresCollections.find().sort("name");
@@ -43,7 +24,7 @@ routes.get("/:id", async (req,res)=>{
 })
 
 routes.post("/", async (req,res)=>{
-    let validationStatus = schema.validate(req.body);
+    let validationStatus = joiSchema.validate(req.body);
 
     if(validationStatus.error)return res.status(400).send({errorMsg:validationStatus.error.details[0].message});
  
@@ -65,7 +46,7 @@ async function createGenre(name){
 }
 
 routes.put("/:id",async (req,res)=>{
-    let validationStatus = schema.validate(req.body);
+    let validationStatus = joiSchema.validate(req.body);
     if(validationStatus.error)
     return res.status(400).send({errorMsg:validationStatus.error.details[0].message});
     
