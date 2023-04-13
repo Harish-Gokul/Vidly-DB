@@ -1,6 +1,7 @@
 const express = require("express");
 const geners = require("./rotues/geners")
 const customersRoutes = require("./rotues/customers")
+const moviesRoutes = require("./rotues/movies");
 const app = express(); 
 const mongoose = require("mongoose")
 mongoose.connect("mongodb://localhost/VidlyDB")
@@ -13,6 +14,7 @@ app.use(lowerCaseConverter)
 
 app.use("/api/genres",geners);
 app.use("/api/customers",customersRoutes)
+app.use("/api/movies",moviesRoutes);
 
 app.get("/",(req,res)=>{
     res.send("Connection success")
