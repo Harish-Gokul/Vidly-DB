@@ -1,4 +1,5 @@
 const express = require("express")
+const auth = require("../middleware/auth")
 const { object } = require("joi")
 const routes = express.Router()
 const mongoose = require("mongoose") 
@@ -23,7 +24,7 @@ routes.get("/:id", async (req,res)=>{
     }
 })
 
-routes.post("/", async (req,res)=>{
+routes.post("/", auth,async (req,res)=>{
     let validationStatus = joiSchema.validate(req.body);
 
     if(validationStatus.error)return res.status(400).send({errorMsg:validationStatus.error.details[0].message});
